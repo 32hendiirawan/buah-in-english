@@ -69,6 +69,9 @@
             display: flex; justify-content: center; align-items: center;
             border-radius: 12px; cursor: grab; font-size: 1.4rem; font-weight: bold;
             box-shadow: 0 4px 0 #2980b9; touch-action: none;
+            touch-action: none;
+            user-select: none;
+            position: relative;
         }
 
         /* Leaderboard Modal */
@@ -254,7 +257,60 @@
             if (draggedElement) draggedElement.remove();
         }
     }
-
+    let touchItem = null;
+    let startX, startY;
+    
+    function handleTouchStart(e) {
+        touchItem = e.target;
+        const touch = e.touches[0];
+        
+        // Simpan posisi awal agar tidak melompat
+        startX = touch.clientX - touchItem.offsetLeft;
+        startY = touch.clientY - touchItem.offsetTop;
+    
+        touchItem.style.position = 'fixed';
+        touchItem.style.zIndex = '1000';
+        touchItem.style.width = '45px'; // Jaga ukuran tetap konsisten
+        updateTouchPosition(touch);
+    }
+    
+    function handleTouchMove(e) {
+        if (!touchItem) return;
+        e.preventDefault(); // Mencegah layar goyang/scroll
+        const touch = e.touches[0];
+        updateTouchPosition(touch);
+    }
+    
+    function updateTouchPosition(touch) {
+        // Kurangi 25 (setengah lebar item) agar jari berada di tengah kotak
+        touchItem.style.left = (touch.clientX - 25) + 'px';
+        touchItem.style.top = (touch.clientY - 25) + 'px';
+    }
+    
+    function handleTouchEnd(e) {
+        if (!touchItem) return;
+    
+        const touch = e.changedTouches[0];
+        // Deteksi elemen apa yang ada di bawah jari saat dilepas
+        const el = document.elementFromPoint(touch.clientX, touch.clientY);
+        
+        const correctLetter = touchItem.innerText;
+        
+        if (el && el.classList.contains('drop-zone') && 
+            correctLetter === el.dataset.correct && 
+            !el.classList.contains('filled')) {
+            
+            processCorrect(el, correctLetter);
+            touchItem.remove(); // Hapus item jika benar
+        } else {
+            // Kembalikan ke posisi semula jika salah atau meleset
+            touchItem.style.position = 'relative';
+            touchItem.style.left = '0';
+            touchItem.style.top = '0';
+            touchItem.style.zIndex = '1';
+        }
+        touchItem = null;
+    }
     function processCorrect(box, letter) {
         box.innerText = letter; box.classList.add('filled');
         score += 10; document.getElementById('score').innerText = score;
@@ -364,5 +420,6 @@
 </body>
 
 </html>
+
 
 
